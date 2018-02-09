@@ -84,7 +84,7 @@ class Cm_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_Ba
      * On large data sets SUNION slows down considerably when used with too many arguments
      * so this is used to chunk the SUNION into a few commands where the number of set ids
      * exceeds this setting.
-     * 
+     *
      * @var int
      */
     protected $_sunionChunkSize = 500;
@@ -155,7 +155,7 @@ class Cm_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_Ba
 
         // If 'sentinel_master' is specified then server is actually sentinel and master address should be fetched from server.
         if ($sentinelMaster) {
-            $sentinelClientOptions = isset($options['sentinel']) && is_array($options['sentinel']) 
+            $sentinelClientOptions = isset($options['sentinel']) && is_array($options['sentinel'])
                                      ? $this->getClientOptions($options['sentinel'] + $options)
                                      : $this->_clientOptions;
             $servers = preg_split('/\s*,\s*/', trim($options['server']), NULL, PREG_SPLIT_NO_EMPTY);
@@ -1188,13 +1188,21 @@ class Cm_Cache_Backend_Redis extends Zend_Cache_Backend implements Zend_Cache_Ba
      */
     protected function _decodeData($data)
     {
-        if (substr($data,2,3) == self::COMPRESS_PREFIX) {
-            switch(substr($data,0,2)) {
-                case 'sn': return snappy_uncompress(substr($data,5));
-                case 'lz': return lzf_decompress(substr($data,5));
-                case 'l4': return lz4_uncompress(substr($data,5));
-                case 'gz': case 'zc': return gzuncompress(substr($data,5));
+        try
+        {
+            if (substr($data,2,3) == self::COMPRESS_PREFIX) {
+                switch(substr($data,0,2)) {
+                    case 'sn': return snappy_uncompress(substr($data,5));
+                    case 'lz': return lzf_decompress(substr($data,5));
+                    case 'l4': return lz4_uncompress(substr($data,5));
+                    case 'gz': case 'zc': return gzuncompress(substr($data,5));
+                }
             }
+        }
+        catch(Exception $e)
+        {
+            // Some applications will capture the php error that these functions can sometimes generate and throw it as an Exception
+            $data = false;
         }
         return $data;
     }
